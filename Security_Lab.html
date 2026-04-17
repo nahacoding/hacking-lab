@@ -45,24 +45,57 @@
     </div>
 </div>
 
-<script>
-    function addPost() {
-        const title = document.getElementById('title').value;
-        const content = document.getElementById('content').value;
-        const list = document.getElementById('postList');
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-        const newItem = document.createElement('div');
-        newItem.className = 'post-item';
-        
-        // 중요: 취약점을 만들기 위해 innerHTML 사용 (XSS 유도)
-        newItem.innerHTML = `<strong>${title}</strong><p>${content}</p>`;
-        
-        list.appendChild(newItem);
-        
-        // 입력창 비우기
-        document.getElementById('title').value = '';
-        document.getElementById('content').value = '';
-    }
+<script>
+  // 1. 파이어베이스 설정 (3단계에서 복사한 본인의 정보를 여기에 넣으세요)
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // 2. 파이어베이스 초기화
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // 3. 글쓰기 버튼 함수 (데이터를 DB에 저장)
+  function addPost() {
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+
+    if(titleInput.value === "" || contentInput.value === "") return;
+
+    // 데이터베이스의 'posts' 경로에 데이터 추가
+    database.ref('posts/').push({
+      title: titleInput.value,
+      content: contentInput.value,
+      timestamp: Date.now()
+    });
+
+    titleInput.value = '';
+    contentInput.value = '';
+  }
+
+  // 4. 데이터베이스 감시 (DB에 새 글이 올라오면 실시간으로 화면에 출력)
+  database.ref('posts/').on('child_added', (snapshot) => {
+    const data = snapshot.val();
+    const list = document.getElementById('postList');
+    
+    const newItem = document.createElement('div');
+    newItem.className = 'post-item';
+    
+    // 취약점 포인트: innerHTML을 사용하여 태그가 실행되도록 설정
+    newItem.innerHTML = `<strong>${data.title}</strong><p>${data.content}</p>`;
+    
+    // 새 글이 위로 올라오게 하려면 prepend, 아래로 붙이려면 appendChild
+    list.prepend(newItem); 
+  });
 </script>
 
 </body>
